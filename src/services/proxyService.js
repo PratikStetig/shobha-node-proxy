@@ -9,33 +9,37 @@ class ProxyService {
     }
 
     this.client = axios.create({
-      baseURL: this.targetBaseUrl,
-      timeout: 60000, // Matching your Spring Boot timeout (60s)
+      baseURL: this.targetBaseUrl.replace(/\/$/, ''), // Remove trailing slash if present
+      timeout: 60000,
     });
   }
 
   async forwardRequest(req) {
     try {
-      const targetUrl = req.originalUrl;
-      logger.info(`Forwarding ${req.method} request to ${this.targetBaseUrl}${targetUrl}`);
+      // Strip /sf-api from the incoming request path to get the exact upstream path
+      const originalPath = req.originalUrl.split('?')[0]; // path without query params
+      const targetPath = originalPath.replace(/^\/sf-api/, '') || '/';
+      
+      const queryString = req.url.includes('?') ? req.url.split('?')[1] : '';
+      const fullTargetUrl = queryString ? `${targetPath}?${queryString}` : targetPath;
 
-      // Extract and clean headers, keeping Content-Type (vital for multipart boundaries)
+      logger.info(`Forwarding ${req.method} request to target: ${this.client.defaults.baseURL}${fullTargetUrl}`);
+
       const outgoingHeaders = {
         ...req.headers,
         host: new URL(this.targetBaseUrl).host,
       };
 
-      // Remove unwanted headers that can cause upstream routing failures
       delete outgoingHeaders['connection'];
-      delete outgoingHeaders['content-length']; // Axios will calculate the correct length for buffers
+      delete outgoingHeaders['content-length'];
 
       const response = await this.client({
         method: req.method,
-        url: targetUrl,
+        url: fullTargetUrl,
         headers: outgoingHeaders,
-        data: req.body, // Buffer containing JSON, form-data, or multipart payload
-        responseType: 'arraybuffer', // Ensures binary files/multipart responses aren't corrupted
-        validateStatus: () => true, // Pass through upstream status codes
+        data: req.body, // Buffer containing multipart or JSON data
+        responseType: 'arraybuffer',
+        validateStatus: () => true,
       });
 
       return {

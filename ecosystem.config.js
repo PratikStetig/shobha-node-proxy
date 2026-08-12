@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'express-proxy',
+      name: 'sobha-proxy',
       script: './src/server.js',
       instances: 'max',
       exec_mode: 'cluster',

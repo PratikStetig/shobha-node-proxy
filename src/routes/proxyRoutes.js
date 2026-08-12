@@ -8,7 +8,7 @@ router.get('/health', (req, res) => {
   res.status(200).json({ status: 'UP', timestamp: new Date().toISOString() });
 });
 
-// Catch-all route to handle all HTTP methods for proxying
-router.all('*', (req, res, next) => proxyController.handleProxy(req, res, next));
+// Match all requests starting with /sf-api and delegate to controller
+router.all('/*', (req, res, next) => proxyController.handleProxy(req, res, next));
 
 module.exports = router;

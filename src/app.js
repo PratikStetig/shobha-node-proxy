@@ -16,8 +16,8 @@ const createApp = () => {
   // Use raw body parser for all requests so multipart streams and files aren't corrupted
   app.use(express.raw({ type: '*/*', limit: '50mb' }));
 
-  // API Routes
-  app.use('/', proxyRoutes);
+  // Mount router under /sf-api prefix
+  app.use('/sf-api', proxyRoutes);
 
   // Centralized Error Handling Middleware
   app.use(errorHandler);
